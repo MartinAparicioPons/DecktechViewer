@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MTG Card Group Slideshow</title>
+<link href='https://fonts.googleapis.com/css?family=League Spartan' rel='stylesheet'>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'League Spartan';
+}
+body {
+    background-size: cover;
+    background-position: center;
+}
+.card-image {
+    max-width: 80%;
+    max-height: 90%;
+    height: auto;
+    margin: 5px;
+    border-radius: 4.3%;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6); 
+}
+#cardContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    text-align: center;    
+    opacity: 1; 
+    transition: opacity 0.5s ease-in-out; 
+}
+.card-count {
+    position: relative;
+    bottom: 20px;
+    width: 30px;
+    left: 50%;
+    margin-left: -20px;
+    font-size: 30px;
+    color: white;
+    background-color: rgba(20, 180, 0, 0.8);
+    padding: 6px 4px 2px 4px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
+    border: solid black 3px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+#background {
+    top: 0;
+    left: 0;
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+    background-size: cover;
+    background-position: center;
+    filter: blur(4px); 
+    position: fixed;
+    background-color: black;
+    z-index: -1;
+    margin:-10px;
+}
+.card-container {
+    height: 100%;
+    align-content: center;
+    position:relative;
+}
+#logo-link {
+    text-decoration: none; /* Removes underline from the link */
+    color: inherit; /* Ensures text color isn't changed by the link */
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+}
+#logo-container {
+    display: flex;
+    align-items: center;
+}
+#logo {
+    width: 50px; 
+    height: auto;
+    margin-right: 10px; 
+}
+#logo-text {
+    color: white;
+    font-size: 14px;
+}
+#explanation {
+    color:white;
+    white-space: pre-wrap;
+}
+#explanation p {
+    margin-block: 0;
+    line-height: 20px;
+    font-size: 20px;
+}
+#codeblock {
+    border: 1px white solid;
+    border-radius: 5px;
+    margin-block: 0;
+    background-color:rgb(50, 50, 50);
+}
+</style>
+</head>
+<body>
+    <div id="background"></div>
+    <input type="file" id="fileInput">
+    <div id="explanation">
+        <p>Please input a decklist. Separate groups of cards with one newline. Cards will be displayed in groups of up to 4 cards. Cards will be shown in order.
+        </p>
+        <p>The decklist has to be in the form: </p>
+        <div id="codeblock">
+            <code>
+    4 Chain Lightning
+    4 Experimental Synthesizer
+    
+    4 Galvanic Blast
+    3 Goblin Blast-Runner
+    4 Goblin Bushwhacker
+    4 Goblin Tomb Raider
+    
+    4 Great Furnace
+    4 Implement of Combustion
+    4 Kuldotha Rebirth
+    
+    4 Lightning Bolt
+    
+    13 Mountain
+    4 Reckless Lackey
+    4 Voldaren Epicure        
+            </code>
+        </div>
+    </div>
+    <div id="cardContainer"></div>
+    <a href="https://www.youtube.com/@apa_19" target="_blank" id="logo-link">
+        <div id="logo-container">
+            <img src="logo.png" alt="Apa logo" id="logo">
+            <span id="logo-text">Made with <3 by Apa</span>
+        </div>
+    </a>
+    <script>
+        const cardGroups = [];
+        let currentIndex = 0;
+
+        document.body.addEventListener('keydown', function(event) {
+            // console.log(cardGroups)
+            if (event.key === 'ArrowRight') {
+                currentIndex = (currentIndex + 1) % cardGroups.length;
+                updateCardDisplay();
+            } else if (event.key === 'ArrowLeft') {
+                currentIndex = (currentIndex - 1 + cardGroups.length) % cardGroups.length;
+                updateCardDisplay();
+            }
+        });
+
+        function hideStuffAfterFileInput() {
+            let idsToHide = ['fileInput', 'logo-link', 'explanation']
+            idsToHide.forEach((id) => document.getElementById(id).style.display = 'None');
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            hideStuffAfterFileInput();
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const lines = e.target.result.split('\r\n');
+                // console.log(lines)
+                let currentGroup = [];
+                lines.forEach(line => {
+                    if (line.trim() === '') {
+                        if (currentGroup.length > 0) {
+                            cardGroups.push(currentGroup);
+                            currentGroup = [];
+                        }
+                        return;
+                    }
+                    const parts = line.trim().split(/(\d+) (.+)/);
+                    const count = parseInt(parts[1], 10);
+                    const name = parts[2].toLowerCase();
+                    //console.log(`${count} => ${name}`)
+                    currentGroup.push({image: fetchCardInfo(name), count: count})
+
+                    if (currentGroup.length >= 4) { 
+                        cardGroups.push(currentGroup);
+                        currentGroup = []; 
+                    }
+                });
+                if(currentGroup.length > 0) {
+                    cardGroups.push(currentGroup);
+                }
+            };
+            reader.readAsText(file);
+            updateCardDisplay();
+        });
+
+        function fetchCardInfo(cardName) {
+            var request = new XMLHttpRequest();
+            var url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}`;
+            request.open('GET', url, false); // false makes the request synchronous
+            request.send(null);
+
+            if (request.status === 200) {
+                var data = JSON.parse(request.responseText);
+                if (data.image_uris && data.image_uris.large) {
+                    return {
+                        large: data.image_uris.large,
+                        artCrop: data.image_uris.art_crop
+                    };
+                } else if (data.card_faces[0].image_uris && data.card_faces[0].image_uris.large) {
+                    return {
+                        large: data.card_faces[0].image_uris.large,
+                        artCrop: data.card_faces[0].image_uris.art_crop
+                    };
+                } else {
+                    console.log("No image available for " + cardName);
+                    return { large: '', artCrop: '' };
+                }
+            } else {
+                console.error('Error fetching card data: ' + request.statusText);
+                return { large: '', artCrop: '' };
+            }
+        }
+
+        function updateCardDisplay() {
+            const container = document.getElementById('cardContainer');
+            const background = document.getElementById('background');
+            // Start with fading out
+            container.style.opacity = 0;
+
+            setTimeout(() => {
+                container.innerHTML = ''; // Clear previous cards
+                let backgroundImageUrl = '';
+                if (cardGroups.length > 0 && cardGroups[currentIndex]) {
+                    cardGroups[currentIndex].forEach(obj => {
+                        const cardContainer = document.createElement('div');
+                        cardContainer.className = 'card-container';
+                        const img = document.createElement('img');
+                        img.src = obj.image.large;
+                        img.className = 'card-image';
+                        const countLabel = document.createElement('div');
+                        countLabel.className = 'card-count';
+                        countLabel.textContent = `${obj.count}`;
+                        cardContainer.appendChild(img);
+                        cardContainer.appendChild(countLabel);
+                        container.appendChild(cardContainer);
+                        if (!backgroundImageUrl && obj.image.artCrop) {
+                            backgroundImageUrl = obj.image.artCrop;
+                        }
+                    });
+                    if (backgroundImageUrl) {
+                        background.style.backgroundImage = `url('${backgroundImageUrl}')`;
+                    }
+                }
+                // Fade in after updating the content
+                container.style.opacity = 1;
+            }, 200); // Wait for the fade out to complete, time should match CSS transition
+        }
+    </script>
+</body>
+</html>
