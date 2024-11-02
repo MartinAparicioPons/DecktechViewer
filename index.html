@@ -117,6 +117,7 @@ body {
     <div id="explanation">
         <p>Please input a decklist. Separate groups of cards with one newline. Cards will be displayed in groups of up to 4 cards. Cards will be shown in order.
         </p>
+        <p>The quantity is mandatory. In case of a 0, it doesn't show the amount.</p>
         <p>The decklist has to be in the form: </p>
         <div id="codeblock">
             <code>
@@ -144,13 +145,14 @@ body {
     <a href="https://www.youtube.com/@apa_19" target="_blank" id="logo-link">
         <div id="logo-container">
             <img src="logo.png" alt="Apa logo" id="logo">
-            <span id="logo-text">Made with <3 by Apa</span>
+            <span id="logo-text">Made with ❤️ by Apa</span>
         </div>
     </a>
     <script>
         const cardGroups = [];
         let currentIndex = 0;
 
+        // Listen to keystrokes for the movement of the page
         document.body.addEventListener('keydown', function(event) {
             // console.log(cardGroups)
             if (event.key === 'ArrowRight') {
@@ -167,6 +169,7 @@ body {
             idsToHide.forEach((id) => document.getElementById(id).style.display = 'None');
         }
 
+        // Handle receiving a file
         document.getElementById('fileInput').addEventListener('change', function(event) {
             hideStuffAfterFileInput();
             const file = event.target.files[0];
@@ -205,6 +208,7 @@ body {
             updateCardDisplay();
         });
 
+        // Fetch the card info from Scryfall (blocking)
         function fetchCardInfo(cardName) {
             var request = new XMLHttpRequest();
             var url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}`;
@@ -249,11 +253,13 @@ body {
                         const img = document.createElement('img');
                         img.src = obj.image.large;
                         img.className = 'card-image';
-                        const countLabel = document.createElement('div');
-                        countLabel.className = 'card-count';
-                        countLabel.textContent = `${obj.count}`;
                         cardContainer.appendChild(img);
-                        cardContainer.appendChild(countLabel);
+                        if (obj.count > 0) {
+                            const countLabel = document.createElement('div');
+                            countLabel.className = 'card-count';
+                            countLabel.textContent = `${obj.count}`;
+                            cardContainer.appendChild(countLabel);
+                        }
                         container.appendChild(cardContainer);
                         if (!backgroundImageUrl && obj.image.artCrop) {
                             backgroundImageUrl = obj.image.artCrop;
